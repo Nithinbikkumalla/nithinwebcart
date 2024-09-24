@@ -28,7 +28,10 @@ fetch('https://fakestoreapi.com/products')
       });
     });
   })
-  .catch(err => console.log(err));
+  .catch(err => {
+    console.log(err);
+    alert('Failed to load products. Please try again later.');
+  });
 
 function addToCart(productId, data) {
   const product = data.find(item => item.id == productId);
@@ -49,6 +52,10 @@ function updateCartDisplay() {
   const totalAmountEl = document.getElementById('total-amount');
   
   cartItems.innerHTML = ''; 
+
+  if (Object.keys(cart).length === 0) {
+    totalPrice = 0;  // Set total price to 0 when cart is empty
+  }
 
   for (let itemId in cart) {
     const item = cart[itemId];
@@ -72,18 +79,26 @@ function updateCartDisplay() {
   }
 
   totalPriceEl.textContent = totalPrice.toFixed(2);
-  totalAmountEl.textContent = (totalPrice + 20 - 50 + 10).toFixed(2);
+  
+  // Calculate total amount considering discounts and fees
+  let discount = 50;
+  let platformFee = 10;
+  let shippingCharges = 20;
+  let finalAmount = totalPrice + shippingCharges - discount + platformFee;
+  
+  totalAmountEl.textContent = (finalAmount > 0 ? finalAmount : 0).toFixed(2);
 }
 
 function adjustQuantity(itemId, change) {
   if (!cart[itemId]) return;
+  
+  totalPrice -= cart[itemId].price * cart[itemId].quantity; // Deduct current total for the item
   cart[itemId].quantity += change;
 
   if (cart[itemId].quantity <= 0) {
-    totalPrice -= cart[itemId].price * (cart[itemId].quantity + 1); // Adjust total price when item removed
     delete cart[itemId];
   } else {
-    totalPrice += cart[itemId].price * change;
+    totalPrice += cart[itemId].price * cart[itemId].quantity; // Re-add the updated quantity price
   }
   
   updateCartDisplay();
@@ -91,8 +106,10 @@ function adjustQuantity(itemId, change) {
 
 function removeFromCart(itemId) {
   if (!cart[itemId]) return;
+  
   totalPrice -= cart[itemId].price * cart[itemId].quantity;
   delete cart[itemId];
+  
   updateCartDisplay();
 }
 
@@ -112,3 +129,17 @@ function filterItems(query) {
     }
   });
 }
+
+// Place Order Button
+document.getElementById('placeorder').addEventListener('click', function() {
+    if (Object.keys(cart).length === 0) {
+        alert('Your cart is empty. Please add items to the cart before placing an order.');
+    } else {
+        alert('Order placed successfully!');
+
+        // Reset the cart and total price after placing the order
+        cart = {};
+        totalPrice = 0;
+        updateCartDisplay(); // Update the display to reflect the empty cart
+    }
+});
